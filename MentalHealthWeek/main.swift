@@ -38,17 +38,30 @@ struct Activity
     }
 }
 
+extension Activity: Equatable
+{
+    static func == (lhs: Activity, rhs: Activity) -> Bool
+    {
+        return
+            lhs.studentNames == rhs.studentNames &&
+            lhs.name == rhs.name &&
+            lhs.shortName == rhs.shortName &&
+            lhs.personCap == rhs.personCap &&
+            lhs.supervisorName == rhs.supervisorName
+    }
+}
+
 struct Student
 {
-    var email: String
-    var timestamp: String
     var activities: [String]
+    var email: String
+    var advisor: String
     
-    init(email: String, timestamp: String, activities: [String])
+    init(activities: [String], email: String, advisor: String)
     {
-        self.email = email
-        self.timestamp = timestamp
         self.activities = activities
+        self.email = email
+        self.advisor = advisor
     }
 }
 
@@ -112,15 +125,18 @@ let activityChoiceOffset = 12
 var columnDescriptors : [String] = []
 var descriptorLookup : [String] = []
 var advisors : [Advisor] = []
+var emptyArray : [String] = []
+var students : [Student] = []
 var activities : [Activity] = [
-    Activity(studentNames: [""], shortName: "Sleep", name: "Sleep In", personCap: 500, supervisorName: "Mr. Fitz"),
-    Activity(studentNames: [""], shortName: "Breakfast", name: "Casual Breakfast", personCap: 160, supervisorName: "Ms. Totten"),
-    Activity(studentNames: [""], shortName: "Gym", name: "Physical Activity", personCap: 50, supervisorName: "Mr. T/ Mr. S"),
-    Activity(studentNames: [""], shortName: "Relaxation", name: "Relaxation", personCap: 160, supervisorName: "Fr. Donkin"),
-    Activity(studentNames: [""], shortName: "Academics", name: "Academic Management", personCap: 30, supervisorName: "Fr. D and NVH(Monday) KU (Wed-Fri) TH"),
-    Activity(studentNames: [""], shortName: "Yoga", name: "Yoga", personCap: 20, supervisorName: "Ms. McPhedran"),
-    Activity(studentNames: [""], shortName: "Animals", name: "Animal Therapy", personCap: 16, supervisorName: "Ms. Kaye/Fitz"),
-    Activity(studentNames: [""], shortName: "Massage", name: "Massage", personCap: 12, supervisorName: "Ms."),
+    Activity(studentNames: emptyArray, shortName: "MathExam", name: "Math Exam", personCap: 500, supervisorName: "Mr. Fitz"),
+    Activity(studentNames: emptyArray, shortName: "Sleep", name: "Sleep In", personCap: 500, supervisorName: "Mr. Fitz"),
+    Activity(studentNames: emptyArray, shortName: "Breakfast", name: "Casual Breakfast", personCap: 160, supervisorName: "Ms. Totten"),
+    Activity(studentNames: emptyArray, shortName: "Gym", name: "Physical Activity", personCap: 50, supervisorName: "Mr. T/ Mr. S"),
+    Activity(studentNames: emptyArray, shortName: "Relaxation", name: "Relaxation", personCap: 160, supervisorName: "Fr. Donkin"),
+    Activity(studentNames: emptyArray, shortName: "Academics", name: "Academic Management", personCap: 30, supervisorName: "Fr. D and NVH(Monday) KU (Wed-Fri) TH"),
+    Activity(studentNames: emptyArray, shortName: "Yoga", name: "Yoga", personCap: 20, supervisorName: "Ms. McPhedran"),
+    Activity(studentNames: emptyArray, shortName: "Animals", name: "Animal Therapy", personCap: 16, supervisorName: "Ms. Kaye/Fitz"),
+    Activity(studentNames: emptyArray, shortName: "Massage", name: "Massage", personCap: 12, supervisorName: "Ms."),
 ]
 
 
@@ -164,76 +180,84 @@ for (number, line) in reader.enumerated()
         
         var studentEmail = columnDescriptors[5]
         var studentGrade = columnDescriptors[9]
+        var studentAdvisor = columnDescriptors[10]
+        var studentActivities : [String] = []
         
-        print(studentEmail)
         
         if let studentGradeInt = Int(studentGrade)
         {
-            if (studentGradeInt == 12)
+            let index = studentGradeInt - 9
+            let gradeChoiceOffset = gradeChoiceNum[index] // An offset to get to the correct selection of survey choices
+            var offset = 0
+            
+            
+            for k in 0...index - 1 // Get the total offset of survey choices so we have the right set
             {
-                let index = studentGradeInt - 9
-                let gradeChoiceOffset = gradeChoiceNum[index] // An offset to get to the correct selection of survey choices
-                var offset = 0
+                offset += gradeChoiceNum[k]
+            }
+            
+            var previousDayCharacter : Character = "M"
+            var activityRankings : [String] = []
+            var dayNames : [String] = []
+            
+            for i in 0...gradeChoiceOffset - 1 // Iterate of all of the survey choices
+            {
+                let currentChoiceIndex = activityChoiceOffset + offset + i
+                //var currentChoice = columnDescriptors[currentChoiceIndex]
                 
+                let currentDay = descriptorLookup[currentChoiceIndex]
                 
-                for k in 0...index - 1 // Get the total offset of survey choices so we have the right set
+                let currentDayCharacter = currentDay[currentDay.startIndex]
+                
+                if (currentDayCharacter != previousDayCharacter || i == gradeChoiceOffset - 1)
                 {
-                    offset += gradeChoiceNum[k]
-                }
-                
-                var previousDayCharacter : Character = "M"
-                var activityRankings : [String] = []
-                var dayNames : [String] = []
-                
-                for i in 0...gradeChoiceOffset - 1
-                {
-                    let currentChoiceIndex = activityChoiceOffset + offset + i
-                    //var currentChoice = columnDescriptors[currentChoiceIndex]
-                    
-                    let currentDay = descriptorLookup[currentChoiceIndex]
-                    dayNames.append(currentDay)
-                    
-                    let currentDayCharacter = currentDay[currentDay.startIndex]
-                    
-                    if (currentDayCharacter != previousDayCharacter || i == gradeChoiceOffset - 1)
+                    if (i == gradeChoiceOffset - 1)
                     {
-                        if (i == gradeChoiceOffset - 1)
+                        if let activityRank = String(columnDescriptors[currentChoiceIndex])
                         {
-                            if let activityRank = String(columnDescriptors[currentChoiceIndex])
-                            {
-                                activityRankings.append(activityRank)
-                            }
+                            activityRankings.append(activityRank)
+                            dayNames.append(currentDay)
                         }
+                    }
+                    
+                    for ranking in 1...8
+                    {
+                        let currentRankingIndex = activityRankings.index(of: String(ranking))!
+                        let currentFullActivityName = dayNames[currentRankingIndex]
+                        let currentActivityName = getActivityName(whole: currentFullActivityName)
                         
-                        for ranking in 1...8
+                        if var currentActivity = activities.filter( {$0.shortName == currentActivityName }).first
                         {
-                            let currentRankingIndex = activityRankings.index(of: String(ranking))!
-                            let currentFullActivityName = dayNames[currentRankingIndex]
-                            let currentActivityName = getActivityName(whole: currentFullActivityName)
-                            
-                            if let currentActivity = activities.filter( {$0.shortName == currentActivityName }).first
+                            if (currentActivity.studentNames.count < currentActivity.personCap)
                             {
-                                if (currentActivity.studentNames.count < currentActivity.personCap)
+                                if let activityIndex = activities.index(of: currentActivity)
                                 {
-                                    print(activities.index(of: currentActivity))
-//                                    currentActivity.studentNames.append(studentEmail)
+                                    activities[activityIndex].studentNames.append(studentEmail)
+                                    studentActivities.append(currentActivity.name)
+                                    
                                     break
                                 }
                             }
                         }
-                        
-                        activityRankings = []
                     }
                     
-                    if let activityRank = String(columnDescriptors[currentChoiceIndex])
-                    {
-                        activityRankings.append(activityRank)
-                    }
-                    
-                    previousDayCharacter = currentDayCharacter
+                    dayNames = []
+                    activityRankings = []
                 }
+                
+                if let activityRank = String(columnDescriptors[currentChoiceIndex])
+                {
+                    activityRankings.append(activityRank)
+                    dayNames.append(currentDay)
+                }
+                
+                previousDayCharacter = currentDayCharacter
             }
+            
+            students.append(Student(activities: studentActivities, email: studentEmail, advisor: studentAdvisor))
         }
+        print(activities)
+        print(students)
     } else {
 //        columnDescriptors = line.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).components(separatedBy: ",")
 //        
