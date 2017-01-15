@@ -24,13 +24,15 @@ struct Activity
 {
     var studentNames : [String]
     var name : String
+    var shortName : String
     var personCap : Int
     var supervisorName : String
     
-    init(studentNames: [String], name: String, personCap: Int, supervisorName : String)
+    init(studentNames: [String], shortName: String, name: String, personCap: Int, supervisorName : String)
     {
         self.studentNames = studentNames
         self.name = name
+        self.shortName = shortName
         self.personCap = personCap
         self.supervisorName = supervisorName
     }
@@ -60,16 +62,6 @@ struct Advisor
     }
 }
 
-var activities : [Activity] = [
-    Activity(studentNames: [""], name: "Sleep In", personCap: 500, supervisorName: "Mr. Fitz"),
-    Activity(studentNames: [""], name: "Casual Breakfast", personCap: 160, supervisorName: "Ms. Totten"),
-    Activity(studentNames: [""], name: "Physical Activity", personCap: 50, supervisorName: "Mr. T/ Mr. S"),
-    Activity(studentNames: [""], name: "Relaxation", personCap: 160, supervisorName: "Fr. Donkin"),
-    Activity(studentNames: [""], name: "Academic Management", personCap: 30, supervisorName: "Fr. D and NVH(Monday) KU (Wed-Fri) TH"),
-    Activity(studentNames: [""], name: "Yoga", personCap: 20, supervisorName: "Ms. McPhedran"),
-    Activity(studentNames: [""], name: "Animal Therapy", personCap: 16, supervisorName: "Ms. Kaye/Fitz"),
-    Activity(studentNames: [""], name: "Massage", personCap: 12, supervisorName: "Ms."),
-]
 
 /// Read text file line by line
 class LineReader
@@ -114,10 +106,45 @@ guard let reader = LineReader(path: "/Users/student/Desktop/github/MentalHealthW
     exit(0); // cannot open file
 }
 
+
 let gradeChoiceNum = [27, 28, 28, 29]
 let activityChoiceOffset = 12
 var columnDescriptors : [String] = []
 var descriptorLookup : [String] = []
+var advisors : [Advisor] = []
+var activities : [Activity] = [
+    Activity(studentNames: [""], shortName: "Sleep", name: "Sleep In", personCap: 500, supervisorName: "Mr. Fitz"),
+    Activity(studentNames: [""], shortName: "Breakfast", name: "Casual Breakfast", personCap: 160, supervisorName: "Ms. Totten"),
+    Activity(studentNames: [""], shortName: "Gym", name: "Physical Activity", personCap: 50, supervisorName: "Mr. T/ Mr. S"),
+    Activity(studentNames: [""], shortName: "Relaxation", name: "Relaxation", personCap: 160, supervisorName: "Fr. Donkin"),
+    Activity(studentNames: [""], shortName: "Academics", name: "Academic Management", personCap: 30, supervisorName: "Fr. D and NVH(Monday) KU (Wed-Fri) TH"),
+    Activity(studentNames: [""], shortName: "Yoga", name: "Yoga", personCap: 20, supervisorName: "Ms. McPhedran"),
+    Activity(studentNames: [""], shortName: "Animals", name: "Animal Therapy", personCap: 16, supervisorName: "Ms. Kaye/Fitz"),
+    Activity(studentNames: [""], shortName: "Massage", name: "Massage", personCap: 12, supervisorName: "Ms."),
+]
+
+
+func getActivityName (whole: String) -> String  {
+    var switchNow = 0
+    var charSetup = [Character]()
+    var output = ""
+    for char in whole.characters {
+        
+        
+        if switchNow == 2 {
+            charSetup.append(char)
+            
+        }
+        
+        if char == "_" {
+            switchNow += 1
+        }
+        
+    }
+    output = String(charSetup)
+    return output
+}
+
 
 for (number, line) in reader.enumerated()
 {
@@ -155,7 +182,8 @@ for (number, line) in reader.enumerated()
                 }
                 
                 var previousDayCharacter : Character = "M"
-                var activityRankings : [Int] = []
+                var activityRankings : [String] = []
+                var dayNames : [String] = []
                 
                 for i in 0...gradeChoiceOffset - 1
                 {
@@ -163,23 +191,41 @@ for (number, line) in reader.enumerated()
                     //var currentChoice = columnDescriptors[currentChoiceIndex]
                     
                     let currentDay = descriptorLookup[currentChoiceIndex]
+                    dayNames.append(currentDay)
+                    
                     let currentDayCharacter = currentDay[currentDay.startIndex]
                     
                     if (currentDayCharacter != previousDayCharacter || i == gradeChoiceOffset - 1)
                     {
                         if (i == gradeChoiceOffset - 1)
                         {
-                            if let activityRank = Int(columnDescriptors[currentChoiceIndex])
+                            if let activityRank = String(columnDescriptors[currentChoiceIndex])
                             {
                                 activityRankings.append(activityRank)
                             }
                         }
-
-                        print(activityRankings)
+                        
+                        for ranking in 1...8
+                        {
+                            let currentRankingIndex = activityRankings.index(of: String(ranking))!
+                            let currentFullActivityName = dayNames[currentRankingIndex]
+                            let currentActivityName = getActivityName(whole: currentFullActivityName)
+                            
+                            if let currentActivity = activities.filter( {$0.shortName == currentActivityName }).first
+                            {
+                                if (currentActivity.studentNames.count < currentActivity.personCap)
+                                {
+                                    print(activities.index(of: currentActivity))
+//                                    currentActivity.studentNames.append(studentEmail)
+                                    break
+                                }
+                            }
+                        }
+                        
                         activityRankings = []
                     }
                     
-                    if let activityRank = Int(columnDescriptors[currentChoiceIndex])
+                    if let activityRank = String(columnDescriptors[currentChoiceIndex])
                     {
                         activityRankings.append(activityRank)
                     }
